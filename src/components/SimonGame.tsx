@@ -216,7 +216,23 @@ const SimonGame: React.FC = () => {
     
     // Activate the slice
     slice.classed('active', true);
-    activeSlice.style('opacity', 1);
+    activeSlice.style('opacity', '1');
+    
+    // Set the active color and shade directly
+    const activeColors = [
+      '#ff6666', // Brighter Red (C)
+      '#ffb366', // Brighter Orange (D)
+      '#ffff66', // Brighter Yellow (E)
+      '#66ff66', // Brighter Green (F)
+      '#6666ff', // Brighter Blue (G)
+      '#ff66ff', // Brighter Purple (A)
+      '#ff99cc'  // Brighter Pink (B)
+    ];
+    
+    // Set both the fill color and add a glow effect
+    activeSlice
+      .style('fill', activeColors[index])
+      .style('filter', 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.8))');
     
     // Log the new state
     console.log('New classes:', slice.attr('class'));
@@ -248,7 +264,9 @@ const SimonGame: React.FC = () => {
     setTimeout(() => {
       console.log('Deactivating slice:', index);
       slice.classed('active', false);
-      activeSlice.style('opacity', 0);
+      activeSlice
+        .style('opacity', '0')
+        .style('filter', 'none');
       console.log('Final classes:', slice.attr('class'));
       console.log('Final active slice opacity:', activeSlice.style('opacity'));
     }, 500);
@@ -821,6 +839,13 @@ const SimonGame: React.FC = () => {
     // Add event listeners to the slices
     slices.on('click', (event, d) => {
       const index = d.index;
+      console.log('=== Slice Click Event ===');
+      console.log('Clicked slice index:', index);
+      
+      // Use highlightPad to handle both visual and audio feedback
+      highlightPad(index);
+      
+      // Handle the player input after the highlight
       handlePlayerInput(index);
     });
 

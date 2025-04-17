@@ -340,7 +340,8 @@
 /* Base slice styles */
 .slice {
   position: relative;
-  transition: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .main-slice {
@@ -354,28 +355,68 @@
 }
 
 .slice.active .active-slice {
-  opacity: 1;
-  transform: scale(1.02);
-  filter: brightness(1.2) drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
+  opacity: 1 !important;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8)) !important;
+  z-index: 1;
 }
 
 /* Base colors for each slice */
-.slice[data-index="0"] .main-slice { fill: #b30000; } /* Darker Red (C) */
-.slice[data-index="1"] .main-slice { fill: #ff8c00; } /* Orange (D) */
-.slice[data-index="2"] .main-slice { fill: #ffd700; } /* Yellow (E) */
-.slice[data-index="3"] .main-slice { fill: #008000; } /* Green (F) */
-.slice[data-index="4"] .main-slice { fill: #000080; } /* Blue (G) */
-.slice[data-index="5"] .main-slice { fill: #800080; } /* Purple (A) */
-.slice[data-index="6"] .main-slice { fill: #ff69b4; } /* Pink (B) */
+.slice:nth-child(1) .main-slice {
+  fill: #800000; /* Darker Red (C) */
+}
+
+.slice:nth-child(2) .main-slice {
+  fill: #cc6600; /* Darker Orange (D) */
+}
+
+.slice:nth-child(3) .main-slice {
+  fill: #cc9900; /* Darker Yellow (E) */
+}
+
+.slice:nth-child(4) .main-slice {
+  fill: #004d00; /* Darker Green (F) */
+}
+
+.slice:nth-child(5) .main-slice {
+  fill: #00004d; /* Darker Blue (G) */
+}
+
+.slice:nth-child(6) .main-slice {
+  fill: #4d004d; /* Darker Purple (A) */
+}
+
+.slice:nth-child(7) .main-slice {
+  fill: #cc0066; /* Darker Pink (B) */
+}
 
 /* Active colors for each slice */
-.slice[data-index="0"] .active-slice { fill: #ff6666; } /* Brighter Red (C) */
-.slice[data-index="1"] .active-slice { fill: #ffa64d; } /* Orange (D) */
-.slice[data-index="2"] .active-slice { fill: #fff299; } /* Yellow (E) */
-.slice[data-index="3"] .active-slice { fill: #00cc00; } /* Green (F) */
-.slice[data-index="4"] .active-slice { fill: #87ceeb; } /* Blue (G) */
-.slice[data-index="5"] .active-slice { fill: #cc66cc; } /* Purple (A) */
-.slice[data-index="6"] .active-slice { fill: #ff99cc; } /* Pink (B) */
+.slice:nth-child(1) .active-slice {
+  fill: #ff6666; /* Brighter Red (C) */
+}
+
+.slice:nth-child(2) .active-slice {
+  fill: #ffb366; /* Brighter Orange (D) */
+}
+
+.slice:nth-child(3) .active-slice {
+  fill: #ffff66; /* Brighter Yellow (E) */
+}
+
+.slice:nth-child(4) .active-slice {
+  fill: #66ff66; /* Brighter Green (F) */
+}
+
+.slice:nth-child(5) .active-slice {
+  fill: #6666ff; /* Brighter Blue (G) */
+}
+
+.slice:nth-child(6) .active-slice {
+  fill: #ff66ff; /* Brighter Purple (A) */
+}
+
+.slice:nth-child(7) .active-slice {
+  fill: #ff99cc; /* Brighter Pink (B) */
+}
 
 @keyframes glowing {
   from {
