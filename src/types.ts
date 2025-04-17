@@ -17,6 +17,7 @@ export interface GameState {
   highScore: number;
   selectedSong: string;
   isPlaying: boolean;
+  actualPlayedSequence?: MelodyNote[];
 }
 
 export const noteToColorMap: Record<Note, string> = {
@@ -40,7 +41,7 @@ export const noteToIndexMap: Record<Note, number> = {
 };
 
 export const colorPalette = [
-  "red", "orange", "yellow", "green",
+  "red", "#FF7F00", "yellow", "green",
   "blue", "indigo", "violet"
 ];
 

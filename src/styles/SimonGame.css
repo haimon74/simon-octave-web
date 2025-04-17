@@ -8,21 +8,64 @@
   margin: 0 auto;
   gap: 2rem;
   font-family: 'Arial', sans-serif;
+  color: #333;
+}
+
+.game-header {
+  text-align: center;
+  width: 100%;
+  min-height: 180px; /* Fixed minimum height to prevent layout jumps */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .game-info {
   text-align: center;
   width: 100%;
+  min-height: 100px; /* Fixed minimum height to prevent layout jumps */
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .song-info {
   margin: 1rem 0;
   font-size: 1.2rem;
+  width: 100%;
+  min-height: 30px;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .song-info span {
   font-weight: bold;
-  color: #4a90e2;
+  color: #4caf50;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+.melody-string {
+  font-size: 1rem;
+  margin-top: 0.5rem;
+  font-family: monospace;
+  word-break: break-word;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.melody-string span {
+  font-weight: bold;
+  color: #4caf50;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 0.3rem;
 }
 
 .score-display {
@@ -31,6 +74,8 @@
   gap: 2rem;
   margin: 1rem 0;
   font-size: 1.2rem;
+  width: 100%;
+  min-height: 30px; /* Fixed minimum height to prevent layout jumps */
 }
 
 .score-display span {
@@ -43,10 +88,12 @@
   justify-content: center;
   gap: 1rem;
   margin: 1rem 0;
+  min-height: 50px; /* Fixed minimum height to prevent layout jumps */
 }
 
 .start-button,
-.toggle-button {
+.toggle-button,
+.audio-button {
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
   border: none;
@@ -65,8 +112,22 @@
   color: white;
 }
 
+.audio-button {
+  background-color: #555;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
 .start-button:hover,
-.toggle-button:hover {
+.toggle-button:hover,
+.audio-button:hover {
   filter: brightness(1.1);
   transform: scale(1.05);
 }
@@ -106,6 +167,13 @@
   border-radius: 50%;
   overflow: hidden;
   background-color: #333;
+  margin: 0;
+  position: relative;
+}
+
+.center-text {
+  font-weight: bold;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .game-instructions {
@@ -139,6 +207,76 @@
   font-style: italic;
   color: #666;
   margin-top: 1rem;
+}
+
+.player-turn-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 1rem 0;
+  gap: 0.5rem;
+  min-height: 50px; /* Fixed minimum height to prevent layout jumps */
+}
+
+/* Removing the standalone timer styles and adding center timer styles */
+/* The following styles will be kept for reference but not used */
+/*
+.timer-container {
+  width: 200px;
+  height: 24px;
+  background-color: #ddd;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.timer-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50, #8bc34a);
+  transition: width 0.3s linear;
+  border-radius: 12px;
+}
+
+.timer-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  font-weight: bold;
+  color: #333;
+  font-size: 0.9rem;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+}
+
+.timer-container .timer-bar[style*="width: 33%"],
+.timer-container .timer-bar[style*="width: 32%"],
+.timer-container .timer-bar[style*="width: 31%"],
+.timer-container .timer-bar[style*="width: 30%"],
+.timer-container .timer-bar[style*="width: 2"],
+.timer-container .timer-bar[style*="width: 1"] {
+  background: linear-gradient(90deg, #f44336, #ff9800);
+  animation: pulse-warning 0.5s infinite alternate;
+}
+*/
+
+/* Adding new center timer styles */
+.center-timer rect {
+  transition: width 0.3s linear, fill 0.3s;
+}
+
+.center-timer rect[fill="#f44336"] {
+  animation: pulse-warning 0.5s infinite alternate;
+}
+
+@keyframes pulse-warning {
+  from {
+    opacity: 0.8;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes pulse {
@@ -191,8 +329,9 @@
 
 /* Animations for slices */
 .slice {
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease, stroke 0.1s;
   transform-origin: center;
+  stroke-linejoin: round;
 }
 
 .slice:hover {
@@ -201,14 +340,132 @@
 
 .slice.active {
   transform: scale(1.05);
-  filter: brightness(1.2);
+  filter: brightness(1.5) drop-shadow(0 0 10px rgba(255, 255, 255, 0.7));
+  animation: glowing 0.5s infinite alternate;
+  stroke: white !important;
+  stroke-width: 6px !important;
+  stroke-opacity: 1;
+  box-shadow: 0 0 15px white;
+}
+
+.shine {
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+@keyframes glowing {
+  from {
+    filter: brightness(1.2) drop-shadow(0 0 5px rgba(255, 255, 255, 0.6));
+    stroke-width: 5px;
+  }
+  to {
+    filter: brightness(1.5) drop-shadow(0 0 15px rgba(255, 255, 255, 0.8));
+    stroke-width: 7px;
+  }
 }
 
 /* Inner circle styles */
 .inner-circle {
   transition: all 0.3s ease;
+  filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.5));
 }
 
 .inner-circle:hover {
-  filter: brightness(1.2);
+  filter: brightness(1.2) drop-shadow(0 0 8px rgba(0, 0, 0, 0.7));
+}
+
+.audio-button:hover {
+  background-color: #666;
+  transform: scale(1.1);
+}
+
+.audio-button:active {
+  transform: scale(0.95);
+}
+
+.audio-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Immediate white border for playing notes - no animation */
+.slice.playing {
+  stroke: white !important;
+  stroke-width: 6px !important;
+  stroke-opacity: 1;
+}
+
+/* Note duration slider styles */
+.note-duration-control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 300px;
+  margin: 1rem auto;
+}
+
+.note-duration-control label {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: #555;
+}
+
+.note-duration-control input[type="range"] {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  background: linear-gradient(to right, #4a90e2, #4caf50);
+  border-radius: 4px;
+  outline: none;
+  transition: opacity 0.2s;
+}
+
+.note-duration-control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border: 2px solid #4a90e2;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.note-duration-control input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border: 2px solid #4a90e2;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.note-duration-control input[type="range"]:hover::-webkit-slider-thumb {
+  transform: scale(1.1);
+  background: #f5f5f5;
+}
+
+.note-duration-control input[type="range"]:hover::-moz-range-thumb {
+  transform: scale(1.1);
+  background: #f5f5f5;
+}
+
+.note-duration-control input[type="range"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.duration-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: #666;
 } 
