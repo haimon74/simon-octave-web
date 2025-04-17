@@ -37,7 +37,7 @@ const SimonGame: React.FC = () => {
   const [melodyBank, setMelodyBank] = useState<Record<string, string>>(childrenTunes);
   const [soundsLoaded, setSoundsLoaded] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [noteDuration, setNoteDuration] = useState<number>(250); // Changed from 500 to 250
+  const [noteDuration, setNoteDuration] = useState<number>(500); // Changed from 1000 to 500
 
   // Add a ref to track the current game state
   const gameStateRef = useRef<GameState>(gameState);
@@ -205,91 +205,54 @@ const SimonGame: React.FC = () => {
   }, [audioContext, audioBuffers, isMuted]);
 
   // Highlight a pad and play its sound
-  const highlightPad = useCallback((index: number, duration: number = 1000) => {
-    if (!svgRef.current) return;
+  const highlightPad = async (index: number) => {
+    console.log('Highlighting pad:', index);
+    const slice = d3.select(`.slice[data-index="${index}"]`);
+    const activeSlice = slice.select('.active-slice');
     
-    setGameState(prev => ({ ...prev, activePad: index }));
+    // Log the current state
+    console.log('Current classes:', slice.attr('class'));
+    console.log('Active slice opacity:', activeSlice.style('opacity'));
     
+    // Activate the slice
+    slice.classed('active', true);
+    activeSlice.style('opacity', 1);
+    
+    // Log the new state
+    console.log('New classes:', slice.attr('class'));
+    console.log('New active slice opacity:', activeSlice.style('opacity'));
+
+    // Play the sound
+    if (!audioContext) return;
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+
     // Get corresponding note for this index
     const noteEntry = Object.entries(noteToIndexMap).find(([_, idx]) => idx === index);
     if (!noteEntry) return;
-    
     const note = noteEntry[0] as Note;
-    const pad = d3.select(svgRef.current)
-      .selectAll('.slice')
-      .filter((_, i) => i === index);
-      
-    const shine = d3.select(svgRef.current)
-      .selectAll('.shine')
-      .filter((_, i) => i === index);
-    
-    // Save original stroke properties
-    const originalStroke = pad.attr('stroke');
-    const originalStrokeWidth = pad.attr('stroke-width');
-    
-    // Apply white border both via class and direct attribute for immediate effect
-    pad.classed('playing', true)
-       .attr('stroke', 'white')
-       .attr('stroke-width', 6);
-    
-    // Apply active state immediately with instant color change
-    pad.classed('active', true)
-       .attr('fill', (_, i) => `url(#active-gradient-${i})`);
-    
-    // Scale animation only - no color transition
-    pad.transition()
-      .duration(duration * 0.08)
-      .attr('transform', 'scale(1.09)')
-      .transition()
-      .duration(duration * 0.7)
-      .attr('transform', 'scale(1.06)')
-      .transition()
-      .duration(duration * 0.3)
-      .attr('transform', 'scale(1)');
-    
-    // Animate the shine overlay
-    shine.transition()
-      .duration(duration * 0.08)
-      .attr('opacity', 0.9)
-      .transition()
-      .duration(duration - (duration * 0.1))
-      .attr('opacity', 0);
-    
-    // Create audio source
-    if (!audioContext || !audioBuffers[note]) {
-      console.error('Audio context or buffer not available');
-      return;
-    }
-    
-    // Ensure audio context is running
-    if (audioContext.state === 'suspended') {
-      audioContext.resume();
-    }
-    
-    // Create audio source and gain node for precise control
+
     const source = audioContext.createBufferSource();
-    const gainNode = audioContext.createGain();
-    
     source.buffer = audioBuffers[note];
+    const gainNode = audioContext.createGain();
     source.connect(gainNode);
     gainNode.connect(audioContext.destination);
-    
-    // Set up the end of the sound
-    source.onended = () => {
-      setGameState(prev => ({ ...prev, activePad: null }));
-      pad.classed('active', false)
-         .classed('playing', false)
-         .attr('stroke', originalStroke)
-         .attr('stroke-width', originalStrokeWidth)
-         .attr('fill', (_, i) => `url(#gradient-${i})`); // Instant return to original color
-      shine.attr('opacity', 0);
-    };
-    
-    // Start the sound with precise timing
+    gainNode.gain.value = 0.5;
+
     const startTime = audioContext.currentTime;
     source.start(startTime);
-    source.stop(startTime + duration/1000); // Convert to seconds
-  }, [audioContext, audioBuffers, noteDuration]);
+    source.stop(startTime + 0.5);
+
+    // Deactivate after sound ends
+    setTimeout(() => {
+      console.log('Deactivating slice:', index);
+      slice.classed('active', false);
+      activeSlice.style('opacity', 0);
+      console.log('Final classes:', slice.attr('class'));
+      console.log('Final active slice opacity:', activeSlice.style('opacity'));
+    }, 500);
+  };
 
   // Handle game over effect - need the type annotation for the highlightPad property
   const handleGameOver = useCallback<HandleGameOverFunction>(() => {
@@ -442,6 +405,7 @@ const SimonGame: React.FC = () => {
         const noteIndex = noteToIndexMap[note.note];
         
         console.log(`Playing note ${i+1}/${actualSequenceToPlay.length}: ${note.note} (index: ${noteIndex})`);
+        console.log(`Note duration: ${noteDuration}ms, Note length: ${note.length}`);
         
         // Wait before playing the first note
         if (i === 0) {
@@ -449,11 +413,13 @@ const SimonGame: React.FC = () => {
         }
         
         // Play the note using the full noteDuration
-        const gameSequenceDuration = noteDuration * 1.0;
-        highlightPad(noteIndex, gameSequenceDuration);
+        const gameSequenceDuration = noteDuration;
+        console.log(`Actual play duration: ${gameSequenceDuration}ms`);
+        highlightPad(noteIndex);
         
         // Wait for the note to complete plus a gap between notes
         const gapBetweenNotes = Math.max(150, gameSequenceDuration * 0.5);
+        console.log(`Gap between notes: ${gapBetweenNotes}ms`);
         await new Promise(resolve => setTimeout(resolve, gameSequenceDuration + gapBetweenNotes));
       }
       
@@ -632,7 +598,7 @@ const SimonGame: React.FC = () => {
     resetPlayerTimeout();
     
     // Highlight the pad that was clicked with full note duration
-    highlightPad(padIndex, noteDuration);
+    highlightPad(padIndex);
     
     // Update player's sequence
     const updatedPlayerSequence = [...gameState.playerSequence, padIndex];
@@ -725,7 +691,7 @@ const SimonGame: React.FC = () => {
                 // Add a consistent delay between notes for clarity
                 setTimeout(() => {
                   // Play the note for its proper duration based on the note length
-                  highlightPad(noteIndex, baseDuration);
+                  highlightPad(noteIndex);
                   
                   // Wait for the note's duration plus a small gap before resolving
                   const gap = Math.max(200, baseDuration * 0.3);
@@ -791,206 +757,94 @@ const SimonGame: React.FC = () => {
   useEffect(() => {
     if (!svgRef.current) return;
 
-    const svg = d3.select(svgRef.current);
-    const width = +svg.attr('width');
-    const height = +svg.attr('height');
+    // Clear any existing content
+    d3.select(svgRef.current).selectAll('*').remove();
+
+    const width = 600;
+    const height = 600;
     const radius = Math.min(width, height) / 2;
-    const innerRadius = radius * 0.3; // For center circle
-    const center = { x: width / 2, y: height / 2 };
-    const numSlices = 7;
 
-    // Clear previous content
-    svg.selectAll('*').remove();
+    // Create the SVG with proper namespace
+    const svg = d3.select(svgRef.current)
+      .attr('width', width)
+      .attr('height', height)
+      .attr('xmlns', 'http://www.w3.org/2000/svg');
 
-    // Define gradients for 3D effect
-    const defs = svg.append('defs');
-    
-    // Add filter for shadow effect
-    defs.append('filter')
-      .attr('id', 'shadow')
-      .append('feDropShadow')
-      .attr('dx', '0')
-      .attr('dy', '0')
-      .attr('stdDeviation', '4');
-      
-    // Add filter for glow effect
-    const glowFilter = defs.append('filter')
-      .attr('id', 'glow');
-    
-    glowFilter.append('feGaussianBlur')
-      .attr('stdDeviation', '3.5')
-      .attr('result', 'coloredBlur');
-      
-    const feMerge = glowFilter.append('feMerge');
-    feMerge.append('feMergeNode').attr('in', 'coloredBlur');
-    feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
+    // Create a group for the slices, centered in the SVG
+    const g = svg.append('g')
+      .attr('transform', `translate(${width / 2},${height / 2})`);
 
-    // Create gradients for each color
-    colorPalette.forEach((color, i) => {
-      const gradient = defs.append('linearGradient')
-        .attr('id', `gradient-${i}`)
-        .attr('x1', '0%')
-        .attr('y1', '0%')
-        .attr('x2', '100%')
-        .attr('y2', '100%');
-      
-      // Define the active color for each slice with more dramatic contrast
-      let activeColor;
-      switch(i) {
-        case 0: // Red
-          activeColor = 'tomato'; // Bright tomato red
-          break;
-        case 1: // Orange
-          activeColor = '#ffb347'; // Light orange
-          break;
-        case 2: // Yellow
-          activeColor = '#ffff00'; // Bright yellow
-          break;
-        case 3: // Green
-          activeColor = '#90ee90'; // Light green
-          break;
-        case 4: // Blue
-          activeColor = '#87cefa'; // Light sky blue
-          break;
-        case 5: // Indigo
-          activeColor = '#b0c4de'; // Light steel blue
-          break;
-        case 6: // Violet
-          activeColor = '#e6e6fa'; // Lavender
-          break;
-        default:
-          activeColor = color;
-      }
-      
-      // Create a gradient for the active state with more dramatic contrast
-      const activeGradient = defs.append('linearGradient')
-        .attr('id', `active-gradient-${i}`)
-        .attr('x1', '0%')
-        .attr('y1', '0%')
-        .attr('x2', '100%')
-        .attr('y2', '100%');
-      
-      // Make active state colors brighter and more vibrant
-      activeGradient.append('stop')
-        .attr('offset', '0%')
-        .attr('stop-color', d3.rgb(activeColor).brighter(1.5).toString());
-      
-      activeGradient.append('stop')
-        .attr('offset', '100%')
-        .attr('stop-color', d3.rgb(activeColor).brighter(0.8).toString());
-      
-      // Make resting state colors darker and more muted
-      gradient.append('stop')
-        .attr('offset', '0%')
-        .attr('stop-color', d3.rgb(color).darker(0.8).toString());
-      
-      gradient.append('stop')
-        .attr('offset', '100%')
-        .attr('stop-color', d3.rgb(color).darker(1.5).toString());
-        
-      // Create a shine gradient for highlighting
-      const shineGradient = defs.append('linearGradient')
-        .attr('id', `shine-${i}`)
-        .attr('x1', '0%')
-        .attr('y1', '0%')
-        .attr('x2', '100%')
-        .attr('y2', '100%');
-        
-      shineGradient.append('stop')
-        .attr('offset', '0%')
-        .attr('stop-color', 'rgba(255, 255, 255, 0.8)');
-        
-      shineGradient.append('stop')
-        .attr('offset', '50%')
-        .attr('stop-color', 'rgba(255, 255, 255, 0.1)');
-        
-      shineGradient.append('stop')
-        .attr('offset', '100%')
-        .attr('stop-color', 'rgba(255, 255, 255, 0)');
-    });
-
-    // Create pie layout
+    // Create a pie layout for 7 equal slices
     const pie = d3.pie<number>()
-      .value(d => 1)
-      .padAngle(0.02)
+      .value(() => 1)
       .sort(null);
 
-    // Create arc generator
-    const arc = d3.arc<d3.PieArcDatum<number>>()
-      .innerRadius(innerRadius)
-      .outerRadius(radius);
-
-    // Create slice group
-    const sliceGroup = svg.append('g')
-      .attr('transform', `translate(${center.x}, ${center.y})`);
-
-    // Generate data array for the 7 slices
-    const data = Array(numSlices).fill(1);
+    // Create an arc generator with adjusted inner and outer radius
+    const arc = d3.arc<any>()
+      .innerRadius(radius * 0.3)
+      .outerRadius(radius * 0.9);
 
     // Create the slices
-    const slices = sliceGroup.selectAll('.slice')
-      .data(pie(data))
+    const slices = g.selectAll('.slice')
+      .data(pie(Array(7).fill(1)))
       .enter()
-      .append('path')
-      .attr('d', arc)
+      .append('g')
       .attr('class', 'slice')
-      .attr('fill', (_, i) => `url(#gradient-${i})`)
-      .attr('stroke', '#333')
-      .attr('stroke-width', 2)
-      .attr('data-index', (_, i) => i)
-      .style('filter', 'url(#shadow)')
-      .style('cursor', 'pointer');
-      
-    // Create shine overlays for each slice (initially hidden)
-    sliceGroup.selectAll('.shine')
-      .data(pie(data))
-      .enter()
-      .append('path')
+      .attr('data-index', (_, i) => i);
+
+    // Add the main slice path
+    slices.append('path')
       .attr('d', arc)
-      .attr('class', 'shine')
-      .attr('fill', (_, i) => `url(#shine-${i})`)
+      .attr('class', 'main-slice')
       .attr('data-index', (_, i) => i)
-      .attr('opacity', 0)
-      .style('pointer-events', 'none'); // So clicks pass through to slices
+      .style('stroke', '#333')
+      .style('stroke-width', '2')
+      .style('cursor', 'pointer')
+      .style('fill', (_, i) => colorPalette[i]);
 
-    // Add the center circle
-    svg.append('circle')
-      .attr('cx', center.x)
-      .attr('cy', center.y)
-      .attr('r', innerRadius - 5)
-      .attr('fill', '#333')
-      .attr('class', 'inner-circle');
+    // Add the active state path
+    slices.append('path')
+      .attr('d', arc)
+      .attr('class', 'active-slice')
+      .attr('data-index', (_, i) => i)
+      .style('stroke', '#333')
+      .style('stroke-width', '2')
+      .style('opacity', 0)
+      .style('fill', (_, i) => {
+        const baseColor = d3.color(colorPalette[i]);
+        if (baseColor) {
+          return baseColor.brighter(2.5).toString();
+        }
+        return colorPalette[i];
+      });
 
-    // Add the status text in the center - will be updated based on game state
-    svg.append('text')
-      .attr('x', center.x)
-      .attr('y', center.y)
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'middle')
-      .attr('fill', 'white')
-      .attr('font-size', '20px')
-      .attr('font-family', 'Arial, sans-serif')
-      .attr('class', 'center-text')
-      .text(gameState.gameOver ? 'Game Over!' : '');
-
-    // Add event listeners to slices
-    slices.on('click', function() {
-      if (!gameState.playerTurn || gameState.gameOver || gameState.isPlaying) return;
-      
-      const index = +d3.select(this).attr('data-index');
+    // Add event listeners to the slices
+    slices.on('click', (event, d) => {
+      const index = d.index;
       handlePlayerInput(index);
     });
 
-    slices.on('mouseenter', function() {
-      if (gameState.gameOver || gameState.isPlaying) return;
-      d3.select(this).transition().duration(100).attr('opacity', 0.8);
-    });
+    // Add the center circle with adjusted radius
+    g.append('circle')
+      .attr('class', 'inner-circle')
+      .attr('r', radius * 0.25)
+      .attr('fill', '#333')
+      .attr('cursor', 'pointer')
+      .on('click', () => {
+        if (!gameState.gameOver) return;
+        startNewGame();
+      });
 
-    slices.on('mouseleave', function() {
-      d3.select(this).transition().duration(100).attr('opacity', 1);
-    });
+    // Add the status text - create it after the center circle
+    g.append('text')
+      .attr('class', 'status-text center-text')
+      .attr('text-anchor', 'middle')
+      .attr('dy', '0.3em')
+      .attr('fill', 'white')
+      .attr('font-size', '16px')
+      .text('');
 
-  }, [gameState.gameOver, gameState.playerTurn, gameState.isPlaying, handlePlayerInput]);
+  }, [gameState.gameOver, gameState.isPlaying, gameState.playerTurn, handlePlayerInput, startNewGame]);
 
   // Update center text based on game state
   useEffect(() => {
@@ -999,14 +853,13 @@ const SimonGame: React.FC = () => {
     const centerText = d3.select(svgRef.current)
       .select('.center-text');
       
+    if (centerText.empty()) {
+      console.warn('Center text element not found');
+      return;
+    }
+    
     // Clear any existing timer display in center
     d3.select(svgRef.current).selectAll('.center-timer').remove();
-    
-    // Log the current game state for debugging
-    console.log('Game state updated:', 
-      gameState.gameOver ? 'GAME OVER' : 
-      gameState.playerTurn ? 'PLAYER TURN' : 
-      gameState.isPlaying ? 'PLAYING SEQUENCE' : 'IDLE');
     
     if (gameState.gameOver) {
       // Check if the center text already says "Good Job!" - if so, don't override it
@@ -1045,6 +898,70 @@ const SimonGame: React.FC = () => {
       centerText.text('');
     }
   }, [gameState, timeRemaining]);
+
+  // Add this function before the return statement
+  const renderColorPreview = (isActive: boolean) => {
+    const width = 300;
+    const height = 300;
+    const radius = Math.min(width, height) / 2;
+
+    // Define the colors to match the CSS
+    const restColors = [
+      '#e60000', // Red (C)
+      '#ff8c00', // Orange (D)
+      '#ffd700', // Yellow (E)
+      '#008000', // Green (F)
+      '#000080', // Blue (G)
+      '#800080', // Purple (A)
+      '#ff69b4'  // Pink (B)
+    ];
+
+    const activeColors = [
+      '#ff3333', // Red (C)
+      '#ffa64d', // Orange (D)
+      '#fff299', // Yellow (E)
+      '#00cc00', // Green (F)
+      '#87ceeb', // Blue (G)
+      '#cc66cc', // Purple (A)
+      '#ff99cc'  // Pink (B)
+    ];
+
+    return (
+      <div style={{ margin: '20px', display: 'inline-block' }}>
+        <h3 style={{ textAlign: 'center', color: '#fff' }}>{isActive ? 'Active State' : 'Rest State'}</h3>
+        <svg width={width} height={height}>
+          <g transform={`translate(${width / 2},${height / 2})`}>
+            {Array(7).fill(0).map((_, i) => {
+              const startAngle = (i * 2 * Math.PI) / 7;
+              const endAngle = ((i + 1) * 2 * Math.PI) / 7;
+              
+              const arc = d3.arc()
+                .innerRadius(radius * 0.3)
+                .outerRadius(radius * 0.9)
+                .startAngle(startAngle)
+                .endAngle(endAngle);
+              
+              const color = isActive ? activeColors[i] : restColors[i];
+
+              return (
+                <path
+                  key={i}
+                  d={arc({ startAngle, endAngle, innerRadius: radius * 0.3, outerRadius: radius * 0.9 }) || ''}
+                  fill={color}
+                  stroke="#333"
+                  strokeWidth="2"
+                />
+              );
+            })}
+            <circle
+              r={radius * 0.25}
+              fill="#333"
+            />
+          </g>
+        </svg>
+      </div>
+    );
+  };
 
   return (
     <div className="simon-game-container">
@@ -1140,6 +1057,11 @@ const SimonGame: React.FC = () => {
           <li>You have 3 seconds to make each move - if you take too long, the game ends.</li>
         </ol>
         <p className="note">Listen carefully - can you recognize the tune as you progress?</p>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+        {renderColorPreview(false)}
+        {renderColorPreview(true)}
       </div>
     </div>
   );
