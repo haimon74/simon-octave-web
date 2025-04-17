@@ -185,6 +185,7 @@ const SimonGame: React.FC = () => {
       source.connect(audioContext.destination);
       source.start(0);
       
+      // Add a small buffer to ensure the full sound plays
       const stopPromise = new Promise<void>((resolve) => {
         setTimeout(() => {
           try {
@@ -193,7 +194,7 @@ const SimonGame: React.FC = () => {
             console.error('Error stopping sound:', error);
           }
           resolve();
-        }, duration);
+        }, duration + 50); // Add 50ms buffer to ensure full sound plays
       });
       
       // Return the promise so we can await it
@@ -214,8 +215,8 @@ const SimonGame: React.FC = () => {
     if (noteEntry) {
       const note = noteEntry[0] as Note;
       
-      // Use the controlled note duration for sound, but cap at max 800ms
-      const soundDuration = Math.min(noteDuration, 800);
+      // Use the full note duration for sound
+      const soundDuration = duration;
       
       // Create and play a sound - will handle AudioContext resuming internally
       playSound(note, soundDuration)
@@ -239,35 +240,27 @@ const SimonGame: React.FC = () => {
        .attr('stroke', 'white')
        .attr('stroke-width', 6);
     
-    // Calculate animation duration based on the note duration
-    // When using custom duration, we'll use it directly
-    // When using the default (1000ms), use the user-configured note duration
-    const animationDuration = duration === 1000 ? noteDuration : duration;
-    
-    // Enhanced animation using CSS classes
+    // Apply active state immediately with instant color change
     pad.classed('active', true)
+       .attr('fill', (_, i) => `url(#active-gradient-${i})`);
+    
+    // Scale animation only - no color transition
+    pad.transition()
+      .duration(duration * 0.08)
+      .attr('transform', 'scale(1.09)')
       .transition()
-      .duration(animationDuration * 0.08) // Faster initial transition
-      .attr('opacity', 1)
-      .attr('filter', 'brightness(1.9)') // Brighter effect
-      .attr('transform', 'scale(1.09)')  // Slightly larger scale
-      .transition()
-      .duration(animationDuration * 0.7) // Main duration
-      .attr('opacity', 1)
-      .attr('filter', 'brightness(1.5)')
+      .duration(duration * 0.7)
       .attr('transform', 'scale(1.06)')
       .transition()
-      .duration(animationDuration * 0.3) // Final transition
-      .attr('opacity', 1)
-      .attr('filter', 'brightness(1)')
+      .duration(duration * 0.3)
       .attr('transform', 'scale(1)');
     
-    // Animate the shine overlay with a more pronounced effect
+    // Animate the shine overlay
     shine.transition()
-      .duration(animationDuration * 0.08)
-      .attr('opacity', 0.9) // More visible shine
+      .duration(duration * 0.08)
+      .attr('opacity', 0.9)
       .transition()
-      .duration(animationDuration - (animationDuration * 0.1))
+      .duration(duration - (duration * 0.1))
       .attr('opacity', 0);
     
     // Clear the active pad after the duration
@@ -276,9 +269,10 @@ const SimonGame: React.FC = () => {
       pad.classed('active', false)
          .classed('playing', false)
          .attr('stroke', originalStroke)
-         .attr('stroke-width', originalStrokeWidth);
+         .attr('stroke-width', originalStrokeWidth)
+         .attr('fill', (_, i) => `url(#gradient-${i})`); // Instant return to original color
       shine.attr('opacity', 0);
-    }, animationDuration);
+    }, duration);
   }, [playSound, audioContext, noteDuration]);
 
   // Handle game over effect - need the type annotation for the highlightPad property
@@ -438,8 +432,8 @@ const SimonGame: React.FC = () => {
           await new Promise(resolve => setTimeout(resolve, 250));
         }
         
-        // Play the note using half of the current noteDuration
-        const gameSequenceDuration = noteDuration * 0.5;
+        // Play the note using the full noteDuration
+        const gameSequenceDuration = noteDuration * 1.0;
         highlightPad(noteIndex, gameSequenceDuration);
         
         // Wait for the note to complete plus a gap between notes
@@ -621,8 +615,8 @@ const SimonGame: React.FC = () => {
     // Reset the player timeout when they make a move
     resetPlayerTimeout();
     
-    // Highlight the pad that was clicked
-    highlightPad(padIndex, 500);
+    // Highlight the pad that was clicked with full note duration
+    highlightPad(padIndex, noteDuration);
     
     // Update player's sequence
     const updatedPlayerSequence = [...gameState.playerSequence, padIndex];
@@ -713,11 +707,10 @@ const SimonGame: React.FC = () => {
                 
                 // Add a consistent delay between notes for clarity
                 setTimeout(() => {
-                  // Play the note for its proper duration, respecting user's note duration preference
-                  // Scale the duration based on the note length, but use user's duration preference
-                  const scaledDuration = (duration / 500) * noteDuration;
+                  // Play the note for its proper duration, using the full noteDuration
+                  const scaledDuration = noteDuration;
                   
-                  // Use the custom scaled duration based on note length and user preference
+                  // Use the full note duration
                   highlightPad(noteIndex, scaledDuration);
                   
                   // Wait for the note's duration plus a small gap before resolving
@@ -827,9 +820,53 @@ const SimonGame: React.FC = () => {
         .attr('x2', '100%')
         .attr('y2', '100%');
       
+      // Define the active color for each slice
+      let activeColor;
+      switch(i) {
+        case 0: // Red
+          activeColor = 'tomato';
+          break;
+        case 1: // Orange
+          activeColor = '#ffb347'; // Light orange
+          break;
+        case 2: // Yellow
+          activeColor = '#ffff00'; // Bright yellow
+          break;
+        case 3: // Green
+          activeColor = '#90ee90'; // Light green
+          break;
+        case 4: // Blue
+          activeColor = '#87cefa'; // Light sky blue
+          break;
+        case 5: // Indigo
+          activeColor = '#b0c4de'; // Light steel blue
+          break;
+        case 6: // Violet
+          activeColor = '#e6e6fa'; // Lavender
+          break;
+        default:
+          activeColor = color;
+      }
+      
+      // Create a gradient for the active state
+      const activeGradient = defs.append('linearGradient')
+        .attr('id', `active-gradient-${i}`)
+        .attr('x1', '0%')
+        .attr('y1', '0%')
+        .attr('x2', '100%')
+        .attr('y2', '100%');
+      
+      activeGradient.append('stop')
+        .attr('offset', '0%')
+        .attr('stop-color', d3.rgb(activeColor).brighter(1.2).toString());
+      
+      activeGradient.append('stop')
+        .attr('offset', '100%')
+        .attr('stop-color', d3.rgb(activeColor).darker(0.8).toString());
+      
       gradient.append('stop')
         .attr('offset', '0%')
-        .attr('stop-color', d3.rgb(color).brighter(1.5).toString());
+        .attr('stop-color', d3.rgb(color).brighter(1.2).toString());
       
       gradient.append('stop')
         .attr('offset', '100%')

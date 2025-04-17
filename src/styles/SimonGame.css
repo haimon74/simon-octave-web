@@ -329,7 +329,7 @@
 
 /* Animations for slices */
 .slice {
-  transition: transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease, stroke 0.1s;
+  transition: transform 0.3s ease, opacity 0.3s ease, stroke 0.1s;
   transform-origin: center;
   stroke-linejoin: round;
 }
@@ -339,14 +339,22 @@
 }
 
 .slice.active {
-  transform: scale(1.05);
-  filter: brightness(1.5) drop-shadow(0 0 10px rgba(255, 255, 255, 0.7));
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.8));
   animation: glowing 0.5s infinite alternate;
   stroke: white !important;
-  stroke-width: 6px !important;
+  stroke-width: 8px !important;
   stroke-opacity: 1;
-  box-shadow: 0 0 15px white;
+  box-shadow: 0 0 20px white;
 }
+
+.slice.active[data-index="0"] { fill: url(#active-gradient-0) !important; }
+.slice.active[data-index="1"] { fill: url(#active-gradient-1) !important; }
+.slice.active[data-index="2"] { fill: url(#active-gradient-2) !important; }
+.slice.active[data-index="3"] { fill: url(#active-gradient-3) !important; }
+.slice.active[data-index="4"] { fill: url(#active-gradient-4) !important; }
+.slice.active[data-index="5"] { fill: url(#active-gradient-5) !important; }
+.slice.active[data-index="6"] { fill: url(#active-gradient-6) !important; }
 
 .shine {
   pointer-events: none;
@@ -355,12 +363,12 @@
 
 @keyframes glowing {
   from {
-    filter: brightness(1.2) drop-shadow(0 0 5px rgba(255, 255, 255, 0.6));
-    stroke-width: 5px;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.7));
+    stroke-width: 7px;
   }
   to {
-    filter: brightness(1.5) drop-shadow(0 0 15px rgba(255, 255, 255, 0.8));
-    stroke-width: 7px;
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.9));
+    stroke-width: 9px;
   }
 }
 
@@ -391,7 +399,7 @@
 /* Immediate white border for playing notes - no animation */
 .slice.playing {
   stroke: white !important;
-  stroke-width: 6px !important;
+  stroke-width: 8px !important;
   stroke-opacity: 1;
 }
 
