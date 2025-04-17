@@ -212,17 +212,9 @@ const SimonGame: React.FC = () => {
     
     // Get corresponding note for this index
     const noteEntry = Object.entries(noteToIndexMap).find(([_, idx]) => idx === index);
-    if (noteEntry) {
-      const note = noteEntry[0] as Note;
-      
-      // Use the full note duration for sound
-      const soundDuration = duration;
-      
-      // Create and play a sound - will handle AudioContext resuming internally
-      playSound(note, soundDuration)
-        .catch(error => console.error('Error in highlightPad when playing sound:', error));
-    }
+    if (!noteEntry) return;
     
+    const note = noteEntry[0] as Note;
     const pad = d3.select(svgRef.current)
       .selectAll('.slice')
       .filter((_, i) => i === index);
@@ -263,8 +255,27 @@ const SimonGame: React.FC = () => {
       .duration(duration - (duration * 0.1))
       .attr('opacity', 0);
     
-    // Clear the active pad after the duration
-    setTimeout(() => {
+    // Create audio source
+    if (!audioContext || !audioBuffers[note]) {
+      console.error('Audio context or buffer not available');
+      return;
+    }
+    
+    // Ensure audio context is running
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
+    
+    // Create audio source and gain node for precise control
+    const source = audioContext.createBufferSource();
+    const gainNode = audioContext.createGain();
+    
+    source.buffer = audioBuffers[note];
+    source.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // Set up the end of the sound
+    source.onended = () => {
       setGameState(prev => ({ ...prev, activePad: null }));
       pad.classed('active', false)
          .classed('playing', false)
@@ -272,8 +283,13 @@ const SimonGame: React.FC = () => {
          .attr('stroke-width', originalStrokeWidth)
          .attr('fill', (_, i) => `url(#gradient-${i})`); // Instant return to original color
       shine.attr('opacity', 0);
-    }, duration);
-  }, [playSound, audioContext, noteDuration]);
+    };
+    
+    // Start the sound with precise timing
+    const startTime = audioContext.currentTime;
+    source.start(startTime);
+    source.stop(startTime + duration/1000); // Convert to seconds
+  }, [audioContext, audioBuffers, noteDuration]);
 
   // Handle game over effect - need the type annotation for the highlightPad property
   const handleGameOver = useCallback<HandleGameOverFunction>(() => {
@@ -702,20 +718,18 @@ const SimonGame: React.FC = () => {
               // eslint-disable-next-line no-loop-func
               await new Promise<void>(resolve => {
                 const note = fullMelody[i];
-                const duration = noteLengthToMilliseconds[note.length];
+                // Get the actual duration from the note length
+                const baseDuration = noteLengthToMilliseconds[note.length];
                 const noteIndex = noteToIndexMap[note.note];
                 
                 // Add a consistent delay between notes for clarity
                 setTimeout(() => {
-                  // Play the note for its proper duration, using the full noteDuration
-                  const scaledDuration = noteDuration;
-                  
-                  // Use the full note duration
-                  highlightPad(noteIndex, scaledDuration);
+                  // Play the note for its proper duration based on the note length
+                  highlightPad(noteIndex, baseDuration);
                   
                   // Wait for the note's duration plus a small gap before resolving
-                  const gap = Math.max(200, noteDuration * 0.3);
-                  setTimeout(resolve, scaledDuration + gap);
+                  const gap = Math.max(200, baseDuration * 0.3);
+                  setTimeout(resolve, baseDuration + gap);
                 }, i === 0 ? 500 : 0);
               });
             }
@@ -820,11 +834,11 @@ const SimonGame: React.FC = () => {
         .attr('x2', '100%')
         .attr('y2', '100%');
       
-      // Define the active color for each slice
+      // Define the active color for each slice with more dramatic contrast
       let activeColor;
       switch(i) {
         case 0: // Red
-          activeColor = 'tomato';
+          activeColor = 'tomato'; // Bright tomato red
           break;
         case 1: // Orange
           activeColor = '#ffb347'; // Light orange
@@ -848,7 +862,7 @@ const SimonGame: React.FC = () => {
           activeColor = color;
       }
       
-      // Create a gradient for the active state
+      // Create a gradient for the active state with more dramatic contrast
       const activeGradient = defs.append('linearGradient')
         .attr('id', `active-gradient-${i}`)
         .attr('x1', '0%')
@@ -856,21 +870,23 @@ const SimonGame: React.FC = () => {
         .attr('x2', '100%')
         .attr('y2', '100%');
       
+      // Make active state colors brighter and more vibrant
       activeGradient.append('stop')
         .attr('offset', '0%')
-        .attr('stop-color', d3.rgb(activeColor).brighter(1.2).toString());
+        .attr('stop-color', d3.rgb(activeColor).brighter(1.5).toString());
       
       activeGradient.append('stop')
         .attr('offset', '100%')
-        .attr('stop-color', d3.rgb(activeColor).darker(0.8).toString());
+        .attr('stop-color', d3.rgb(activeColor).brighter(0.8).toString());
       
+      // Make resting state colors darker and more muted
       gradient.append('stop')
         .attr('offset', '0%')
-        .attr('stop-color', d3.rgb(color).brighter(1.2).toString());
+        .attr('stop-color', d3.rgb(color).darker(0.8).toString());
       
       gradient.append('stop')
         .attr('offset', '100%')
-        .attr('stop-color', d3.rgb(color).darker(1.2).toString());
+        .attr('stop-color', d3.rgb(color).darker(1.5).toString());
         
       // Create a shine gradient for highlighting
       const shineGradient = defs.append('linearGradient')
