@@ -49,4 +49,24 @@ export const noteLengthToMilliseconds: Record<NoteLength, number> = {
   '♩': 500, // quarter note = 1 beat = 500ms
   '♪': 250, // eighth note = 1/2 beat = 250ms
   '𝅗𝅥': 1000 // half note = 2 beats = 1000ms
-}; 
+};
+
+export const baseColors = [
+  '#800000', // Darker Red (C)
+  '#cc6600', // Darker Orange (D)
+  '#cc9900', // Darker Yellow (E)
+  '#004d00', // Darker Green (F)
+  '#00004d', // Darker Blue (G)
+  '#4d004d', // Darker Purple (A)
+  '#cc0066'  // Darker Pink (B)
+];
+
+export const activeColors = [
+  '#ff6666', // Brighter Red (C)
+  '#ffb366', // Brighter Orange (D)
+  '#ffff66', // Brighter Yellow (E)
+  '#66ff66', // Brighter Green (F)
+  '#6666ff', // Brighter Blue (G)
+  '#ff66ff', // Brighter Purple (A)
+  '#ff99cc'  // Brighter Pink (B)
+]; 
