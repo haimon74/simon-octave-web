@@ -51,8 +51,6 @@ const SimonSlice: React.FC<SimonSliceProps> = ({
     sliceGroup.append('path')
       .attr('d', arc(sliceData))
       .attr('class', 'main-slice')
-      .style('stroke', '#333')
-      .style('stroke-width', '2')
       .style('cursor', 'pointer')
       .style('fill', baseColors[index]);
 
@@ -60,10 +58,7 @@ const SimonSlice: React.FC<SimonSliceProps> = ({
     sliceGroup.append('path')
       .attr('d', arc(sliceData))
       .attr('class', 'active-slice')
-      .style('stroke', '#333')
-      .style('stroke-width', '2')
       .style('opacity', isActive ? '1' : '0')
-      .style('fill', activeColors[index])
       .style('filter', 'url(#glow)')
       .style('pointer-events', 'none')
       .style('transition', 'opacity 0.2s ease');

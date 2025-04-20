@@ -26,17 +26,14 @@ const SimonBoard: React.FC<SimonBoardProps> = ({
       {/* Define the glow filter */}
       <defs>
         <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+          <feGaussianBlur stdDeviation="4" result="blur" />
           <feColorMatrix
             in="blur"
             mode="matrix"
             values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"
             result="glow"
           />
-          <feMerge>
-            <feMergeNode in="glow" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
+          <feBlend in="SourceGraphic" in2="glow" mode="normal" />
         </filter>
       </defs>
 
