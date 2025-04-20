@@ -32,13 +32,15 @@ const SimonSlice: React.FC<SimonSliceProps> = ({
       .value(() => 1)
       .sort(null);
 
-    // Create an arc generator with adjusted inner and outer radius
-    const arc = d3.arc<any>()
-      .innerRadius(radius * 0.3)
-      .outerRadius(radius * 0.9);
-
     // Get the slice data
     const sliceData = pie(Array(7).fill(1))[index];
+
+    // Create an arc generator with adjusted inner and outer radius
+    const arc = d3.arc<any>()
+      .innerRadius(radius * 0.4)
+      .outerRadius(radius * 0.9)
+      .startAngle(sliceData.startAngle + 0.025) // Reduced gap at start
+      .endAngle(sliceData.endAngle - 0.025);    // Reduced gap at end
 
     // Create the slice group
     const sliceGroup = d3.select(sliceRef.current)
